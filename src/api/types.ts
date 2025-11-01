@@ -42,3 +42,18 @@ export interface CreateSessionResult {
   channel_id: string;
   app_id: string;
 }
+
+// /faceswap/live/update エンドポイントのレスポンス型
+export interface UpdateSessionResponse {
+  code: number;
+  msg: string;
+}
+
+// APIレスポンスコードの定義
+export const API_RESPONSE_CODES = {
+  SUCCESS: 1000,
+  PARAMETER_ERROR: 1003,
+  INVALID_AUTHORIZATION: 1101,
+  AUTHORIZATION_EMPTY: 1102,
+  INSUFFICIENT_QUOTA: 1104,
+} as const;
