@@ -1,6 +1,11 @@
 // src/api/akool.ts
 import axios from 'axios';
-import type { DetectResponse, DetectResult } from './types';
+import type {
+  DetectResponse,
+  DetectResult,
+  CreateSessionResponse,
+  CreateSessionResult,
+} from './types';
 
 const BASE = 'https://openapi.akool.com/api/open/v3';
 const SG3 = 'https://sg3.akool.com';
@@ -24,8 +29,11 @@ export const AkoolAPI = {
     };
   },
 
-  createSession: async (sourceImage: string, opts: string) => {
-    const res = await axios.post(
+  createSession: async (
+    sourceImage: string,
+    opts: string
+  ): Promise<CreateSessionResult> => {
+    const res = await axios.post<CreateSessionResponse>(
       `${BASE}/faceswap/live/create`,
       {
         sourceImage: [
@@ -37,7 +45,12 @@ export const AkoolAPI = {
       },
       { headers: { 'x-api-key': API_KEY } }
     );
-    return res.data.data;
+
+    const { _id, ...rest } = res.data.data;
+    return {
+      session_id: _id,
+      ...rest,
+    };
   },
 
   updateSession: async (
