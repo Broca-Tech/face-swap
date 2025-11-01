@@ -1,13 +1,14 @@
 // src/api/akool.ts
 import axios from 'axios';
+import type { DetectResponse, DetectResult } from './types';
 
 const BASE = 'https://openapi.akool.com/api/open/v3';
 const SG3 = 'https://sg3.akool.com';
 const API_KEY = import.meta.env.AKOOL_API_KEY;
 
 export const AkoolAPI = {
-  detect: async (imageUrl: string) => {
-    const res = await axios.post(
+  detect: async (imageUrl: string): Promise<DetectResult> => {
+    const res = await axios.post<DetectResponse>(
       `${SG3}/detect`,
       {
         single_face: false,
@@ -15,7 +16,12 @@ export const AkoolAPI = {
       },
       { headers: { 'x-api-key': API_KEY } }
     );
-    return res.data;
+
+    const { landmarks_str, error_code } = res.data;
+    return {
+      landmarks_str: landmarks_str[0],
+      error_code,
+    };
   },
 
   createSession: async (sourceImage: string, opts: string) => {
