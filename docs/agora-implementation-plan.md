@@ -269,7 +269,7 @@ await client.leave();
 
 1. ✅ Agora SDK のインストール(完了)
 2. ✅ `useAgora` フックの作成(完了)
-3. ⬜ `AgoraVideoStream` コンポーネントの作成
+3. ✅ `AgoraVideoStream` コンポーネントの作成(完了)
 4. ⬜ 基本的な接続とビデオ表示のテスト
 
 ### フェーズ2: Akool統合
