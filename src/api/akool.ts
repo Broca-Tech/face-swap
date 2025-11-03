@@ -8,19 +8,27 @@ import type {
   CloseSessionResponse,
 } from './types';
 
-const BASE = 'https://openapi.akool.com/api/open/v3';
-const SG3 = 'https://sg3.akool.com';
-const API_KEY = import.meta.env.AKOOL_API_KEY;
+// 開発環境ではプロキシ経由、本番環境では直接アクセス
+const BASE = import.meta.env.DEV
+  ? '/api/akool'
+  : 'https://openapi.akool.com/api/open/v3';
+const SG3 = import.meta.env.DEV ? '/api/sg3' : 'https://sg3.akool.com';
+
+// 開発環境ではプロキシがAPIキーを追加するため不要
+const API_KEY = import.meta.env.DEV
+  ? undefined
+  : import.meta.env.VITE_AKOOL_API_KEY;
 
 export const AkoolAPI = {
   detect: async (imageUrl: string): Promise<DetectResult> => {
+    const headers = API_KEY ? { 'x-api-key': API_KEY } : {};
     const res = await axios.post<DetectResponse>(
       `${SG3}/detect`,
       {
         single_face: false,
         image_url: imageUrl,
       },
-      { headers: { 'x-api-key': API_KEY } }
+      { headers }
     );
 
     const { landmarks_str, error_code } = res.data;
@@ -34,18 +42,32 @@ export const AkoolAPI = {
     sourceImage: string,
     opts: string
   ): Promise<CreateSessionResponse> => {
+    const requestBody = {
+      sourceImage: [
+        {
+          path: sourceImage,
+          opts,
+        },
+      ],
+    };
+
+    console.log('=== CreateSession Request ===');
+    console.log('URL:', `${BASE}/faceswap/live/create`);
+    console.log('Dev mode:', import.meta.env.DEV);
+    console.log('Using proxy:', import.meta.env.DEV ? 'YES' : 'NO');
+    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('sourceImage:', sourceImage);
+    console.log('opts:', opts);
+
+    const headers = API_KEY ? { 'x-api-key': API_KEY } : {};
     const res = await axios.post<CreateSessionResponse>(
       `${BASE}/faceswap/live/create`,
-      {
-        sourceImage: [
-          {
-            path: sourceImage,
-            opts,
-          },
-        ],
-      },
-      { headers: { 'x-api-key': API_KEY } }
+      requestBody,
+      { headers }
     );
+
+    console.log('=== CreateSession Response ===');
+    console.log('Response:', JSON.stringify(res.data, null, 2));
 
     return res.data;
   },
@@ -55,6 +77,7 @@ export const AkoolAPI = {
     sourceImage: string,
     opts: string
   ): Promise<UpdateSessionResponse> => {
+    const headers = API_KEY ? { 'x-api-key': API_KEY } : {};
     const res = await axios.post<UpdateSessionResponse>(
       `${BASE}/faceswap/live/update`,
       {
@@ -66,18 +89,17 @@ export const AkoolAPI = {
           },
         ],
       },
-      { headers: { 'x-api-key': API_KEY } }
+      { headers }
     );
     return res.data;
   },
 
   closeSession: async (sessionId: string): Promise<CloseSessionResponse> => {
+    const headers = API_KEY ? { 'x-api-key': API_KEY } : {};
     const res = await axios.post<CloseSessionResponse>(
       `${BASE}/faceswap/live/close`,
       { _id: sessionId },
-      {
-        headers: { 'x-api-key': API_KEY },
-      }
+      { headers }
     );
     return res.data;
   },
