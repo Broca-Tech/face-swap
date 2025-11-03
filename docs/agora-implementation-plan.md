@@ -121,14 +121,14 @@ Agora関連の型定義は `src/api/types.ts` に既に含まれています
 
 ---
 
-### Step 4: ルーティングの設定
+### Step 4: ルーティングの設定 ✅
 
 **ファイル**: `src/main.tsx` または `src/App.tsx`
 
 **実装内容**:
 
-- React Routerで `/face-swap-live` ルートを追加
-- ナビゲーションメニューの追加
+- ✅ React Routerで `/face-swap-live` ルートを追加
+- ✅ ナビゲーションメニューの追加
 
 ---
 
@@ -274,10 +274,10 @@ await client.leave();
 
 ### フェーズ2: Akool統合
 
-1. ⬜ `FaceSwapLive` ページの作成
-2. ⬜ Detect API との連携
-3. ⬜ CreateSession API との連携
-4. ⬜ Agoraチャンネル情報の取得と接続
+1. ✅ `FaceSwapLive` ページの作成(完了)
+2. ✅ Detect API との連携(完了)
+3. ✅ CreateSession API との連携(完了)
+4. ✅ Agoraチャンネル情報の取得と接続(完了)
 
 ### フェーズ3: 改善
 

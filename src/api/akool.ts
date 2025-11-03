@@ -32,6 +32,12 @@ export const AkoolAPI = {
     );
 
     const { landmarks_str, error_code } = res.data;
+
+    // landmarks_strが配列で、最初の要素が存在するかチェック
+    if (!landmarks_str || landmarks_str.length === 0) {
+      throw new Error('No face landmarks detected in the image');
+    }
+
     return {
       landmarks_str: landmarks_str[0],
       error_code,

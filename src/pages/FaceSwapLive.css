@@ -1,0 +1,320 @@
+/* src/pages/FaceSwapLive.css */
+
+.face-swap-live {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  background: #1a1a1a;
+  min-height: 100vh;
+}
+
+.face-swap-live h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 2rem;
+  min-height: 600px;
+}
+
+/* ========================================
+   左側: コントロールパネル
+   ======================================== */
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.control-panel h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #555;
+  border-bottom: 2px solid #4a90e2;
+  padding-bottom: 0.5rem;
+}
+
+/* アップロードセクション */
+.upload-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 2px dashed #4a90e2;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-input:hover:not(:disabled) {
+  border-color: #357abd;
+  background-color: #f0f7ff;
+}
+
+.file-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.preview {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ステータスセクション */
+.status-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.status-idle {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.status-detecting,
+.status-creating {
+  background-color: #fff3cd;
+  color: #856404;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-ready {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-connected {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.error-message {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.session-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.session-info h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item .label {
+  font-weight: 600;
+  color: #555;
+}
+
+.info-item .value {
+  color: #333;
+  word-break: break-all;
+  text-align: right;
+  max-width: 60%;
+}
+
+/* アクションセクション */
+.actions-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #357abd;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+/* ========================================
+   右側: ビデオセクション
+   ======================================== */
+
+.video-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.video-section h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #555;
+  border-bottom: 2px solid #4a90e2;
+  padding-bottom: 0.5rem;
+}
+
+/* AgoraVideoStreamコンポーネントのラッパー */
+.video-section .agora-video-stream {
+  padding: 1rem;
+  margin: 0;
+  max-width: 100%;
+  background: transparent;
+  box-shadow: none;
+}
+
+.video-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  border: 2px dashed #4a90e2;
+}
+
+.video-placeholder p {
+  color: #ffffff;
+  font-size: 1rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* ========================================
+   レスポンシブデザイン
+   ======================================== */
+
+@media (max-width: 1200px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+
+  .control-panel {
+    order: 2;
+  }
+
+  .video-section {
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .face-swap-live {
+    padding: 1rem;
+  }
+
+  .content {
+    gap: 1rem;
+  }
+
+  .control-panel h2,
+  .video-section h2 {
+    font-size: 1rem;
+  }
+
+  .btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
