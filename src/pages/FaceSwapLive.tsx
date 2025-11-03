@@ -52,13 +52,19 @@ export default function FaceSwapLive() {
       // 画像をData URLとして読み込む
       const reader = new FileReader();
       reader.onload = async e => {
-        const imageUrl = e.target?.result as string;
-        setUploadedImageUrl(imageUrl);
+        const base64Image = e.target?.result as string;
+        setUploadedImageUrl(base64Image);
+
+        console.log('=== File Upload Info ===');
+        console.log('File name:', file.name);
+        console.log('File type:', file.type);
+        console.log('File size:', file.size, 'bytes');
+        console.log('Base64 length:', base64Image.length);
 
         try {
-          // Detect APIを実行
+          // Detect APIを実行（base64エンコーディング使用）
           console.log('Detecting face landmarks...');
-          const detectResult = await AkoolAPI.detect(imageUrl);
+          const detectResult = await AkoolAPI.detectBase64(base64Image);
 
           if (detectResult.error_code !== 0) {
             throw new Error(
@@ -74,7 +80,7 @@ export default function FaceSwapLive() {
           setSessionState('creating');
           console.log('Creating session...');
           const sessionResponse = await AkoolAPI.createSession(
-            imageUrl,
+            base64Image,
             detectResult.landmarks_str
           );
 
