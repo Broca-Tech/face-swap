@@ -33,13 +33,71 @@ export const AkoolAPI = {
 
     const { landmarks_str, error_code } = res.data;
 
-    // landmarks_strが配列で、最初の要素が存在するかチェック
-    if (!landmarks_str || landmarks_str.length === 0) {
+    // landmarks_strが配列の場合は最初の要素を取得、文字列の場合はそのまま使用
+    let landmarkString: string;
+
+    if (Array.isArray(landmarks_str)) {
+      if (landmarks_str.length === 0) {
+        throw new Error('No face landmarks detected in the image');
+      }
+      landmarkString = landmarks_str[0];
+    } else if (typeof landmarks_str === 'string') {
+      landmarkString = landmarks_str;
+    } else {
       throw new Error('No face landmarks detected in the image');
     }
 
     return {
-      landmarks_str: landmarks_str[0],
+      landmarks_str: landmarkString,
+      error_code,
+    };
+  },
+
+  detectBase64: async (base64Image: string): Promise<DetectResult> => {
+    const headers = API_KEY ? { 'x-api-key': API_KEY } : {};
+
+    // プレフィックスを除去せず、そのまま送ってみる
+    console.log('=== DetectBase64 Request ===');
+    console.log('URL:', `${SG3}/detect`);
+    console.log('Base64 length:', base64Image.length);
+    console.log('Base64 prefix:', base64Image.substring(0, 100));
+
+    const res = await axios.post<DetectResponse>(
+      `${SG3}/detect`,
+      {
+        single_face: true,
+        img: base64Image,
+      },
+      { headers }
+    );
+
+    console.log('=== DetectBase64 Response ===');
+    console.log('Full response:', JSON.stringify(res.data, null, 2));
+    console.log('landmarks_str type:', typeof res.data.landmarks_str);
+    console.log('landmarks_str value:', res.data.landmarks_str);
+
+    const { landmarks_str, error_code } = res.data;
+
+    // landmarks_strが配列の場合は最初の要素を取得、文字列の場合はそのまま使用
+    let landmarkString: string;
+
+    if (Array.isArray(landmarks_str)) {
+      if (landmarks_str.length === 0) {
+        console.error('No landmarks detected. Response data:', res.data);
+        throw new Error('No face landmarks detected in the image');
+      }
+      landmarkString = landmarks_str[0];
+    } else if (typeof landmarks_str === 'string') {
+      landmarkString = landmarks_str;
+    } else {
+      console.error('Unexpected landmarks_str format:', landmarks_str);
+      throw new Error('No face landmarks detected in the image');
+    }
+
+    console.log('Final landmark string:', landmarkString);
+
+    return {
+      landmarks_str: landmarkString,
       error_code,
     };
   },

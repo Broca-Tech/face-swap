@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import '../App.css';
 import { AkoolAPI } from '../api/akool';
 import type {
@@ -10,6 +10,7 @@ import type {
 
 function ApiCheck() {
   const [imageUrl, setImageUrl] = useState('https://urassh.dev/urassh.png');
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [detectResult, setDetectResult] = useState<DetectResult | null>(null);
   const [sessionResult, setSessionResult] =
     useState<CreateSessionResponse | null>(null);
@@ -20,6 +21,55 @@ function ApiCheck() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    setError(null);
+    setDetectResult(null);
+    setSessionResult(null);
+    setUpdateResult(null);
+    setCloseResult(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async e => {
+        const base64Image = e.target?.result as string;
+        setUploadedImage(base64Image);
+
+        console.log('=== File Upload Info ===');
+        console.log('File name:', file.name);
+        console.log('File type:', file.type);
+        console.log('File size:', file.size, 'bytes');
+        console.log('Base64 length:', base64Image.length);
+
+        try {
+          const data = await AkoolAPI.detectBase64(base64Image);
+          setDetectResult(data);
+        } catch (err) {
+          console.error('=== Detect Error ===', err);
+          setError(err instanceof Error ? err.message : 'エラーが発生しました');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      reader.onerror = () => {
+        setError('ファイルの読み込みに失敗しました');
+        setLoading(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setLoading(false);
+    }
+  };
 
   const handleDetect = async () => {
     setLoading(true);
@@ -52,8 +102,10 @@ function ApiCheck() {
     setCloseResult(null);
 
     try {
+      // アップロードされた画像があればそれを使用、なければURLを使用
+      const imageSource = uploadedImage || imageUrl;
       const data = await AkoolAPI.createSession(
-        imageUrl,
+        imageSource,
         detectResult.landmarks_str
       );
       setSessionResult(data);
@@ -80,9 +132,11 @@ function ApiCheck() {
     setUpdateResult(null);
 
     try {
+      // アップロードされた画像があればそれを使用、なければURLを使用
+      const imageSource = uploadedImage || imageUrl;
       const data = await AkoolAPI.updateSession(
         sessionResult.data._id,
-        imageUrl,
+        imageSource,
         detectResult.landmarks_str
       );
       setUpdateResult(data);
@@ -146,6 +200,39 @@ function ApiCheck() {
           </label>
         </div>
 
+        <div style={{ marginBottom: '20px' }}>
+          <label>
+            または、ファイルをアップロード (Base64でDetect実行):
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              disabled={loading}
+              style={{
+                display: 'block',
+                padding: '8px',
+                marginTop: '8px',
+                fontSize: '14px',
+              }}
+            />
+          </label>
+          {uploadedImage && (
+            <div style={{ marginTop: '10px' }}>
+              <img
+                src={uploadedImage}
+                alt="アップロード画像"
+                style={{
+                  maxWidth: '200px',
+                  maxHeight: '200px',
+                  border: '1px solid #404040',
+                  borderRadius: '8px',
+                }}
+              />
+            </div>
+          )}
+        </div>
+
         <div
           style={{
             display: 'flex',
@@ -155,7 +242,7 @@ function ApiCheck() {
           }}
         >
           <button onClick={handleDetect} disabled={loading}>
-            {loading ? '処理中...' : '1. Detect実行'}
+            {loading ? '処理中...' : '1. Detect実行 (URL)'}
           </button>
           <button
             onClick={handleCreateSession}
