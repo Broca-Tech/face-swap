@@ -244,6 +244,9 @@
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
   overflow: hidden;
 }
 
@@ -253,25 +256,46 @@
   color: #555;
   border-bottom: 2px solid #4a90e2;
   padding-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ビデオコンテンツ領域 */
+.video-section > div {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* AgoraVideoStreamコンポーネントのラッパー */
 .video-section .agora-video-stream {
-  padding: 1rem;
+  padding: 0 !important;
   margin: 0;
-  max-width: 100%;
-  background: transparent;
-  box-shadow: none;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  box-sizing: border-box;
+}
+
+.video-section .agora-video-stream .video-container {
+  padding: 0 !important;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .video-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
-  background-color: #2a2a2a;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 600px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 8px;
-  border: 2px dashed #4a90e2;
+  border: none;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .video-placeholder p {
@@ -279,6 +303,7 @@
   font-size: 1rem;
   text-align: center;
   padding: 1rem;
+  margin: 0;
 }
 
 /* ========================================

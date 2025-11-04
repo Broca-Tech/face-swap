@@ -25,18 +25,55 @@ export default function FaceSwapLive() {
   const [landmarksStr, setLandmarksStr] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // セッション状態の監視
+  // セッション状態の監視（ポーリング）
   useEffect(() => {
     if (!sessionData) return;
 
-    const checkSessionStatus = async () => {
-      // faceswap_statusが2（Processing）になったら接続可能
-      if (sessionData.faceswap_status === FACESWAP_STATUS.PROCESSING) {
-        setSessionState('ready');
+    let isCancelled = false;
+    let pollCount = 0;
+    const MAX_POLLS = 30; // 最大30秒待機
+
+    const pollSessionStatus = async () => {
+      if (isCancelled) return;
+
+      try {
+        // 既にProcessingなら即座に完了
+        if (sessionData.faceswap_status === FACESWAP_STATUS.PROCESSING) {
+          setSessionState('ready');
+          return;
+        }
+
+        // タイムアウトチェック
+        if (pollCount >= MAX_POLLS) {
+          console.error('Session initialization timeout');
+          setError('セッションの初期化がタイムアウトしました');
+          setSessionState('error');
+          return;
+        }
+
+        pollCount++;
+        console.log(`Polling session status... (${pollCount}/${MAX_POLLS})`);
+
+        // 1秒後に再チェック
+        setTimeout(() => {
+          if (!isCancelled) {
+            pollSessionStatus();
+          }
+        }, 1000);
+      } catch (err) {
+        console.error('Error polling session status:', err);
+        if (!isCancelled) {
+          setError('セッション状態の確認に失敗しました');
+          setSessionState('error');
+        }
       }
     };
 
-    checkSessionStatus();
+    pollSessionStatus();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [sessionData]);
 
   // 画像のアップロードとDetect API実行
@@ -153,6 +190,9 @@ export default function FaceSwapLive() {
 
     try {
       console.log('Closing session...');
+      console.log('Session ID:', sessionData._id);
+      console.log('Current faceswap_status:', sessionData.faceswap_status);
+
       const closeResponse = await AkoolAPI.closeSession(sessionData._id);
 
       if (closeResponse.code !== 1000) {
@@ -169,7 +209,22 @@ export default function FaceSwapLive() {
       setError(null);
     } catch (err) {
       console.error('Error closing session:', err);
-      setError(err instanceof Error ? err.message : 'Failed to close session');
+
+      // ネットワークエラーの場合は特別なメッセージを表示
+      if (err instanceof Error) {
+        if (
+          err.message.includes('Network Error') ||
+          err.message.includes('ERR_CONNECTION_REFUSED')
+        ) {
+          setError(
+            '開発サーバーとの接続が切れています。ページをリロードしてください。'
+          );
+        } else {
+          setError(`セッションのクローズに失敗: ${err.message}`);
+        }
+      } else {
+        setError('セッションのクローズに失敗しました');
+      }
     }
   };
 
