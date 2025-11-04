@@ -49,18 +49,28 @@ export const AgoraVideoStream: React.FC<AgoraVideoStreamProps> = ({
   // リモートビデオの表示用ref
   const remoteVideoContainerRef = useRef<HTMLDivElement>(null);
 
+  // 接続試行済みフラグ（無限ループ防止）
+  const hasAttemptedJoin = useRef(false);
+
   // ========================================
   // 自動接続処理
   // ========================================
   useEffect(() => {
-    if (config && autoJoin && !isConnected) {
+    if (config && autoJoin && !isConnected && !hasAttemptedJoin.current) {
       console.log('[AgoraVideoStream] Auto-joining channel...');
+      hasAttemptedJoin.current = true;
+
       joinChannel(config).catch(err => {
         console.error('[AgoraVideoStream] Failed to join channel:', err);
         onError?.(err);
       });
     }
   }, [config, autoJoin, isConnected, joinChannel, onError]);
+
+  // configが変更されたらフラグをリセット
+  useEffect(() => {
+    hasAttemptedJoin.current = false;
+  }, [config?.channel, config?.token]);
 
   // ========================================
   // 自動publish処理

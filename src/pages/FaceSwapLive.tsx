@@ -23,57 +23,34 @@ export default function FaceSwapLive() {
   >(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [landmarksStr, setLandmarksStr] = useState<string | null>(null);
+  const [reconnectKey, setReconnectKey] = useState<number>(0); // 再接続用のキー
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // セッション状態の監視（ポーリング）
+  // セッション状態の監視
+  // Agora接続を試みることで、実際のセッション準備状態を確認する
   useEffect(() => {
     if (!sessionData) return;
 
-    let isCancelled = false;
-    let pollCount = 0;
-    const MAX_POLLS = 30; // 最大30秒待機
+    // Failedの場合はエラー
+    if (sessionData.faceswap_status === FACESWAP_STATUS.FAILED) {
+      console.error('Session initialization failed');
+      setError('セッションの初期化に失敗しました');
+      setSessionState('error');
+      return;
+    }
 
-    const pollSessionStatus = async () => {
-      if (isCancelled) return;
+    // QUEUING、PROCESSING、SUCCESSのいずれの状態でも接続を試みる
+    // 実際の接続可否はAgora側で判断される
+    console.log(
+      `Session status: ${sessionData.faceswap_status} (1=Queuing, 2=Processing, 3=Success)`
+    );
+    console.log('💡 Strategy: Attempting Agora connection to verify readiness');
+    console.log('   - If connection succeeds → Session is ready');
+    console.log(
+      '   - If connection fails → Session may still be queuing, use Update button'
+    );
 
-      try {
-        // 既にProcessingなら即座に完了
-        if (sessionData.faceswap_status === FACESWAP_STATUS.PROCESSING) {
-          setSessionState('ready');
-          return;
-        }
-
-        // タイムアウトチェック
-        if (pollCount >= MAX_POLLS) {
-          console.error('Session initialization timeout');
-          setError('セッションの初期化がタイムアウトしました');
-          setSessionState('error');
-          return;
-        }
-
-        pollCount++;
-        console.log(`Polling session status... (${pollCount}/${MAX_POLLS})`);
-
-        // 1秒後に再チェック
-        setTimeout(() => {
-          if (!isCancelled) {
-            pollSessionStatus();
-          }
-        }, 1000);
-      } catch (err) {
-        console.error('Error polling session status:', err);
-        if (!isCancelled) {
-          setError('セッション状態の確認に失敗しました');
-          setSessionState('error');
-        }
-      }
-    };
-
-    pollSessionStatus();
-
-    return () => {
-      isCancelled = true;
-    };
+    setSessionState('ready');
   }, [sessionData]);
 
   // 画像のアップロードとDetect API実行
@@ -158,7 +135,7 @@ export default function FaceSwapLive() {
     }
   };
 
-  // セッションの更新
+  // セッションの更新（これにより接続準備が進む可能性がある）
   const handleUpdateSession = async () => {
     if (!sessionData || !uploadedImageUrl || !landmarksStr) {
       setError('Session data is missing');
@@ -178,6 +155,17 @@ export default function FaceSwapLive() {
       }
 
       console.log('Session updated successfully');
+      console.log(
+        '✓ Update complete. If session was in QUEUING state, it may now be ready.'
+      );
+      console.log('Try connecting to Agora video stream.');
+
+      // 更新後、接続を試みる状態に変更
+      setSessionState('ready');
+      setError(null);
+
+      // コンポーネントを再マウントして再接続
+      setReconnectKey(prev => prev + 1);
     } catch (err) {
       console.error('Error updating session:', err);
       setError(err instanceof Error ? err.message : 'Failed to update session');
@@ -231,9 +219,44 @@ export default function FaceSwapLive() {
   // Agora接続状態が変更されたとき
   const handleAgoraStateChange = (connected: boolean) => {
     if (connected) {
+      console.log('✅ Agora connection established - Session is ready!');
       setSessionState('connected');
+      setError(null); // 接続成功時はエラーをクリア
     } else if (sessionState === 'connected') {
       setSessionState('ready');
+    }
+  };
+
+  // Agoraエラーハンドリング
+  const handleAgoraError = (error: Error) => {
+    console.error('❌ Agora connection error:', error);
+    console.log('Session faceswap_status:', sessionData?.faceswap_status);
+
+    // OPERATION_ABORTEDエラーの場合、セッションが準備中の可能性が高い
+    const isOperationAborted =
+      error.message.includes('OPERATION_ABORTED') ||
+      error.message.includes('cancel token canceled');
+
+    if (isOperationAborted) {
+      console.log(
+        '⚠️ Detected OPERATION_ABORTED error - session may not be ready yet'
+      );
+
+      if (sessionData?.faceswap_status === FACESWAP_STATUS.QUEUING) {
+        setError(
+          'セッションはまだキュー中です。数秒待ってから「セッション更新」ボタンをクリックして再試行してください。'
+        );
+      } else {
+        setError(
+          'Agoraチャンネルがまだ準備できていません。「セッション更新」ボタンをクリックして再試行してください。'
+        );
+      }
+      // エラー状態ではなく、ready状態を維持（再試行可能にする）
+      setSessionState('ready');
+    } else {
+      // その他のエラー
+      setError(`Agora接続エラー: ${error.message}`);
+      setSessionState('error');
     }
   };
 
@@ -314,10 +337,21 @@ export default function FaceSwapLive() {
             <h2>3. アクション</h2>
             <button
               onClick={handleUpdateSession}
-              disabled={!sessionData || sessionState !== 'connected'}
+              disabled={
+                !sessionData ||
+                sessionState === 'detecting' ||
+                sessionState === 'creating'
+              }
               className="btn btn-secondary"
+              title={
+                sessionData?.faceswap_status === FACESWAP_STATUS.QUEUING
+                  ? 'セッションを更新して接続を再試行'
+                  : 'セッションを更新'
+              }
             >
               セッション更新
+              {sessionData?.faceswap_status === FACESWAP_STATUS.QUEUING &&
+                ' 🔄'}
             </button>
             <button
               onClick={handleCloseSession}
@@ -348,8 +382,10 @@ export default function FaceSwapLive() {
         {/* 右側: ビデオストリーム */}
         <div className="video-section">
           <h2>4. ビデオストリーム</h2>
-          {sessionData && sessionState === 'ready' ? (
+          {sessionData &&
+          (sessionState === 'ready' || sessionState === 'connected') ? (
             <AgoraVideoStream
+              key={reconnectKey}
               config={{
                 appId: sessionData.app_id,
                 channel: sessionData.channel_id,
@@ -360,11 +396,7 @@ export default function FaceSwapLive() {
               autoPublish={true}
               onConnected={() => handleAgoraStateChange(true)}
               onDisconnected={() => handleAgoraStateChange(false)}
-              onError={error => {
-                console.error('Agora error:', error);
-                setError(error.message);
-                setSessionState('error');
-              }}
+              onError={handleAgoraError}
             />
           ) : (
             <div className="video-placeholder">
@@ -372,7 +404,8 @@ export default function FaceSwapLive() {
                 {sessionState === 'idle' && '画像をアップロードしてください'}
                 {sessionState === 'detecting' && '顔を検出中...'}
                 {sessionState === 'creating' && 'セッションを作成中...'}
-                {sessionState === 'error' && 'エラーが発生しました'}
+                {sessionState === 'error' &&
+                  'エラーが発生しました - セッション更新ボタンで再試行してください'}
               </p>
             </div>
           )}
