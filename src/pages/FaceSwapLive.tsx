@@ -1,6 +1,7 @@
 // src/pages/FaceSwapLive.tsx
 import { useState, useRef, useEffect } from 'react';
 import { AkoolAPI } from '../api/akool';
+import { uploadImage } from '../api/storage';
 import { FACESWAP_STATUS } from '../api/types';
 import type { CreateSessionResponse } from '../api/types';
 import { AgoraVideoStream } from '../components/AgoraVideoStream';
@@ -49,87 +50,73 @@ export default function FaceSwapLive() {
     setSessionState('detecting');
 
     try {
-      // 画像をData URLとして読み込む
-      const reader = new FileReader();
-      reader.onload = async e => {
-        const base64Image = e.target?.result as string;
-        setUploadedImageUrl(base64Image);
+      console.log('=== File Upload Info ===');
+      console.log('File name:', file.name);
+      console.log('File type:', file.type);
+      console.log('File size:', file.size, 'bytes');
 
-        console.log('=== File Upload Info ===');
-        console.log('File name:', file.name);
-        console.log('File type:', file.type);
-        console.log('File size:', file.size, 'bytes');
-        console.log('Base64 length:', base64Image.length);
+      // 1. Supabaseにアップロード（現在はダミーURL）
+      console.log('Uploading image to storage...');
+      const imageUrl = await uploadImage(file);
+      console.log('Image URL:', imageUrl);
+      setUploadedImageUrl(imageUrl);
 
-        try {
-          // Detect APIを実行（base64エンコーディング使用）
-          console.log('Detecting face landmarks...');
-          const detectResult = await AkoolAPI.detectBase64(base64Image);
+      // 2. Detect APIを実行（URL版を使用）
+      console.log('Detecting face landmarks...');
+      const detectResult = await AkoolAPI.detect(imageUrl);
 
-          if (detectResult.error_code !== 0) {
-            throw new Error(
-              `Face detection failed with error code: ${detectResult.error_code}`
-            );
-          }
+      if (detectResult.error_code !== 0) {
+        throw new Error(
+          `Face detection failed with error code: ${detectResult.error_code}`
+        );
+      }
 
-          console.log('Face detected successfully');
-          console.log('Landmarks:', detectResult.landmarks_str);
-          setLandmarksStr(detectResult.landmarks_str);
+      console.log('Face detected successfully');
+      console.log('Landmarks:', detectResult.landmarks_str);
+      setLandmarksStr(detectResult.landmarks_str);
 
-          // CreateSession APIを実行
-          setSessionState('creating');
-          console.log('Creating session...');
-          const sessionResponse = await AkoolAPI.createSession(
-            base64Image,
-            detectResult.landmarks_str
-          );
+      // 3. CreateSession APIを実行（URL版を使用）
+      setSessionState('creating');
+      console.log('Creating session...');
+      const sessionResponse = await AkoolAPI.createSession(
+        imageUrl,
+        detectResult.landmarks_str
+      );
 
-          if (sessionResponse.code !== 1000) {
-            throw new Error(`Session creation failed: ${sessionResponse.msg}`);
-          }
+      if (sessionResponse.code !== 1000) {
+        throw new Error(`Session creation failed: ${sessionResponse.msg}`);
+      }
 
-          console.log('Session created successfully');
-          console.log('Session ID:', sessionResponse.data._id);
-          console.log('Faceswap Status:', sessionResponse.data.faceswap_status);
-          console.log('Agora Info:', {
-            app_id: sessionResponse.data.app_id,
-            channel_id: sessionResponse.data.channel_id,
-            front_user_id: sessionResponse.data.front_user_id,
-          });
+      console.log('Session created successfully');
+      console.log('Session ID:', sessionResponse.data._id);
+      console.log('Faceswap Status:', sessionResponse.data.faceswap_status);
+      console.log('Agora Info:', {
+        app_id: sessionResponse.data.app_id,
+        channel_id: sessionResponse.data.channel_id,
+        front_user_id: sessionResponse.data.front_user_id,
+      });
 
-          setSessionData(sessionResponse.data);
+      setSessionData(sessionResponse.data);
 
-          // ステータスがすでにProcessingの場合は即座に接続可能状態にする
-          if (
-            sessionResponse.data.faceswap_status === FACESWAP_STATUS.PROCESSING
-          ) {
-            setSessionState('ready');
-          } else {
-            // それ以外の場合は監視を開始
-            setSessionState('creating');
-          }
-        } catch (err) {
-          console.error('Error in face detection or session creation:', err);
-          const errorMessage =
-            err instanceof Error ? err.message : 'Unknown error occurred';
-          setError(
-            errorMessage.includes('No face landmarks')
-              ? '画像から顔を検出できませんでした。別の画像を試してください。'
-              : errorMessage
-          );
-          setSessionState('error');
-        }
-      };
-
-      reader.onerror = () => {
-        setError('Failed to read image file');
-        setSessionState('error');
-      };
-
-      reader.readAsDataURL(file);
+      // ステータスがすでにProcessingの場合は即座に接続可能状態にする
+      if (sessionResponse.data.faceswap_status === FACESWAP_STATUS.PROCESSING) {
+        setSessionState('ready');
+      } else {
+        // それ以外の場合は監視を開始
+        setSessionState('creating');
+      }
     } catch (err) {
-      console.error('Error uploading image:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      console.error(
+        'Error in image upload, face detection or session creation:',
+        err
+      );
+      const errorMessage =
+        err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(
+        errorMessage.includes('No face landmarks')
+          ? '画像から顔を検出できませんでした。別の画像を試してください。'
+          : errorMessage
+      );
       setSessionState('error');
     }
   };

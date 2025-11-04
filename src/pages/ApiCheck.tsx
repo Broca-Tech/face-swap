@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import '../App.css';
 import { AkoolAPI } from '../api/akool';
+import { uploadImage } from '../api/storage';
 import type {
   DetectResult,
   CreateSessionResponse,
@@ -37,36 +38,23 @@ function ApiCheck() {
     setCloseResult(null);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async e => {
-        const base64Image = e.target?.result as string;
-        setUploadedImage(base64Image);
+      console.log('=== File Upload Info ===');
+      console.log('File name:', file.name);
+      console.log('File type:', file.type);
+      console.log('File size:', file.size, 'bytes');
 
-        console.log('=== File Upload Info ===');
-        console.log('File name:', file.name);
-        console.log('File type:', file.type);
-        console.log('File size:', file.size, 'bytes');
-        console.log('Base64 length:', base64Image.length);
+      // Supabaseにアップロード（現在はダミーURL）
+      const imageUrl = await uploadImage(file);
+      console.log('Uploaded image URL:', imageUrl);
+      setUploadedImage(imageUrl);
 
-        try {
-          const data = await AkoolAPI.detectBase64(base64Image);
-          setDetectResult(data);
-        } catch (err) {
-          console.error('=== Detect Error ===', err);
-          setError(err instanceof Error ? err.message : 'エラーが発生しました');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      reader.onerror = () => {
-        setError('ファイルの読み込みに失敗しました');
-        setLoading(false);
-      };
-
-      reader.readAsDataURL(file);
+      // Detect APIを実行（URL版を使用）
+      const data = await AkoolAPI.detect(imageUrl);
+      setDetectResult(data);
     } catch (err) {
+      console.error('=== Upload or Detect Error ===', err);
       setError(err instanceof Error ? err.message : 'エラーが発生しました');
+    } finally {
       setLoading(false);
     }
   };
