@@ -10,7 +10,7 @@ export const uploadImage = async (file: File): Promise<string> => {
   console.log('uploadImage called with file:', file.name, file.size, 'bytes');
 
   // ダミーURLを返す（連携確認用）
-  return 'https://urassh.dev/uraassh.png';
+  return 'https://urassh.dev/urassh.png';
 
   /* 実装予定のコード:
   const fileName = `${Date.now()}-${file.name}`;
